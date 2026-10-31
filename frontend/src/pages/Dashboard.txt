@@ -1,0 +1,82 @@
+
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import api from "../services/api";
+import { useAuth } from "../context/AuthContext";
+
+function Dashboard() {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const fetchTasks = async () => {
+      try {
+        const response = await api.get("/tasks");
+        setTasks(response.data);
+      } catch (err) {
+        setError(
+          err.response?.data?.message ||
+            "Could not load tasks. Please try again."
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTasks();
+  }, []);
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
+
+  return (
+    <main className="dashboard-page">
+      <header className="dashboard-header">
+        <div>
+          <h1>My Task Manager</h1>
+          <p>Welcome, {user?.name || "User"}!</p>
+        </div>
+
+        <button onClick={handleLogout}>Logout</button>
+      </header>
+
+      <section className="tasks-section">
+        <h2>My Tasks</h2>
+
+        {loading && <p>Loading tasks...</p>}
+
+        {error && <p className="error-message">{error}</p>}
+
+        {!loading && !error && tasks.length === 0 && (
+          <p>No tasks yet. Add your first task soon!</p>
+        )}
+
+        {!loading && tasks.length > 0 && (
+          <ul className="task-list">
+            {tasks.map((task) => (
+              <li key={task._id} className="task-item">
+                <div>
+                  <h3>{task.title}</h3>
+                  {task.description && <p>{task.description}</p>}
+                </div>
+
+                <span>
+                  {task.completed ? "Completed" : "Pending"}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </main>
+  );
+}
+
+export default Dashboard;
+
